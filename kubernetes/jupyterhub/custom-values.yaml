@@ -33,9 +33,6 @@ proxy:
   service:
     type: LoadBalancer
     loadBalancerIP: 10.5.3.4
-  
-  nodeSelector:
-    kubernetes.io/hostname: cn1
 
 singleuser:
   # Default single-user image
