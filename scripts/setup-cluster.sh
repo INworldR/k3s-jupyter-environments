@@ -6,7 +6,7 @@ set -e
 echo "Setting up K3s cluster for Jupyter environments..."
 
 # Check if running on cluster node
-if ! hostname | grep -q "cn[1-4]"; then
+if ! hostname | grep -qE "(cn[1-4]|cluster-node-0[1-4])"; then
   echo "This script should be run on a cluster node (cn1-cn4)"
   exit 1
 fi
