@@ -7,23 +7,29 @@ ENV CONDA_DIR=/opt/conda
 ENV PATH=$CONDA_DIR/bin:$PATH
 ENV SHELL=/bin/bash
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies in smaller chunks
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
+    curl \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     vim \
-    curl \
     build-essential \
-    ca-certificates \
     locales \
     sudo \
-    # ARM64 specific tools
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ARM64 specific tools and Jupyter dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc-aarch64-linux-gnu \
     g++-aarch64-linux-gnu \
-    # Jupyter dependencies
     nodejs \
     npm \
-    # Cleanup
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

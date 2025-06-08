@@ -1,0 +1,38 @@
+# Simple Base Dockerfile for ARM64 Jupyter Environments
+FROM python:3.11-slim
+
+# Set environment
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install minimal dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create jupyter user
+RUN useradd -m -s /bin/bash -u 1000 jupyter
+
+# Switch to jupyter user
+USER jupyter
+WORKDIR /home/jupyter
+
+# Install JupyterLab using pip
+RUN pip install --no-cache-dir \
+    jupyterlab==4.0 \
+    notebook \
+    ipykernel \
+    ipywidgets \
+    numpy \
+    pandas \
+    matplotlib
+
+# Create directories
+RUN mkdir -p /home/jupyter/notebooks
+
+# Expose port
+EXPOSE 8888
+
+# Default command
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--no-browser"]
