@@ -1,0 +1,66 @@
+name: jupyter-security
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Python base
+  - python=3.11
+  - pip
+  - ipykernel
+  - ipywidgets
+  
+  # Network Analysis
+  - scapy
+  - python-nmap
+  - netaddr
+  - dnspython
+  
+  # Data Processing
+  - pandas
+  - numpy
+  - matplotlib
+  - seaborn
+  
+  # Forensics & Analysis
+  - pycryptodome
+  - python-magic
+  - requests
+  - beautifulsoup4
+  - lxml
+  
+  # Visualization
+  - plotly
+  - bokeh
+  - networkx
+  
+  # Database
+  - sqlalchemy
+  - psycopg2
+  
+  # Utilities
+  - tqdm
+  - python-dateutil
+  - pytz
+  
+  # Pip packages (not in conda-forge for ARM64)
+  - pip:
+    # Forensics
+    - volatility3
+    - yara-python
+    - pefile
+    - oletools
+    
+    # Network
+    - impacket
+    - pyshark
+    - python-whois
+    
+    # Analysis
+    - androguard
+    - capstone
+    - unicorn
+    
+    # Reporting
+    - jinja2
+    - markdown
+    - python-docx

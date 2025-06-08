@@ -1,0 +1,67 @@
+# Security Analysis Environment for ARM64
+FROM k3s-jupyter-base:latest
+
+USER root
+
+# Install security-specific system packages
+RUN apt-get update && apt-get install -y \
+    # Network tools
+    tcpdump \
+    tshark \
+    nmap \
+    netcat \
+    whois \
+    dnsutils \
+    net-tools \
+    traceroute \
+    # Development tools
+    libpcap-dev \
+    libssl-dev \
+    libffi-dev \
+    libmagic-dev \
+    # Forensics tools
+    binwalk \
+    foremost \
+    hexedit \
+    # Additional utilities
+    john \
+    hashcat \
+    aircrack-ng \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Switch to jupyter user
+USER jupyter
+WORKDIR /home/jupyter
+
+# Copy environment file
+COPY environments/security/environment.yml /tmp/environment.yml
+
+# Create conda environment
+RUN conda env create -f /tmp/environment.yml && \
+    conda clean --all -f -y && \
+    rm /tmp/environment.yml
+
+# Activate environment and install kernel
+RUN /opt/conda/envs/jupyter-security/bin/python -m ipykernel install \
+    --user \
+    --name security \
+    --display-name "Security Analysis (ARM64)"
+
+# Copy setup script
+COPY environments/security/setup.sh /home/jupyter/setup.sh
+RUN chmod +x /home/jupyter/setup.sh
+
+# Create notebook directories
+RUN mkdir -p notebooks/security/{pcaps,logs,reports,scripts,samples}
+
+# Copy example notebooks if available
+COPY environments/security/notebooks/* notebooks/security/ || true
+
+# Set environment variables
+ENV CONDA_DEFAULT_ENV=jupyter-security
+ENV PATH=/opt/conda/envs/jupyter-security/bin:$PATH
+
+WORKDIR /home/jupyter/notebooks
+
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--no-browser", "--allow-root"]

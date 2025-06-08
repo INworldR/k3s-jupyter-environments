@@ -1,0 +1,131 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  REGISTRY: "localhost:5000"
+  
+before_script:
+  - docker info
+  - echo "Building for ARM64 architecture"
+
+# Build base image
+build-base:
+  stage: build
+  tags:
+    - arm64
+    - docker
+  script:
+    - docker buildx create --use --name multiarch || true
+    - docker buildx build 
+        --platform linux/arm64
+        -t $REGISTRY/k3s-jupyter-base:$CI_COMMIT_SHORT_SHA
+        -t $REGISTRY/k3s-jupyter-base:latest
+        -f docker/Dockerfile.base
+        --push .
+  only:
+    - main
+    - merge_requests
+
+# Build environment images
+.build-env:
+  stage: build
+  tags:
+    - arm64
+    - docker
+  needs: ["build-base"]
+  script:
+    - docker buildx build
+        --platform linux/arm64
+        --build-arg BASE_IMAGE=$REGISTRY/k3s-jupyter-base:$CI_COMMIT_SHORT_SHA
+        -t $REGISTRY/k3s-jupyter-$ENV_NAME:$CI_COMMIT_SHORT_SHA
+        -t $REGISTRY/k3s-jupyter-$ENV_NAME:latest
+        -f docker/Dockerfile.$ENV_NAME
+        --push .
+
+build-security:
+  extends: .build-env
+  variables:
+    ENV_NAME: security
+
+build-datascience:
+  extends: .build-env
+  variables:
+    ENV_NAME: datascience
+
+build-malware:
+  extends: .build-env
+  variables:
+    ENV_NAME: malware
+
+build-pentesting:
+  extends: .build-env
+  variables:
+    ENV_NAME: pentesting
+
+# Test images
+test-images:
+  stage: test
+  tags:
+    - arm64
+  needs:
+    - build-security
+    - build-datascience
+    - build-malware
+    - build-pentesting
+  script:
+    - |
+      for env in security datascience malware pentesting; do
+        echo "Testing k3s-jupyter-$env..."
+        docker run --rm $REGISTRY/k3s-jupyter-$env:$CI_COMMIT_SHORT_SHA python -c "import sys; print(sys.version)"
+        docker run --rm $REGISTRY/k3s-jupyter-$env:$CI_COMMIT_SHORT_SHA jupyter --version
+      done
+  only:
+    - main
+    - merge_requests
+
+# Deploy to K3s
+deploy-staging:
+  stage: deploy
+  tags:
+    - arm64
+    - kubectl
+  needs: ["test-images"]
+  script:
+    - kubectl set image deployment/jupyterhub-hub hub=$REGISTRY/k3s-jupyter-hub:$CI_COMMIT_SHORT_SHA -n jupyterhub
+    - |
+      for env in security datascience malware pentesting; do
+        kubectl patch cm jupyterhub-config -n jupyterhub --type merge -p '
+          {"data": {"values.yaml": "singleuser:\n  profileList:\n    - kubespawner_override:\n        image: '$REGISTRY'/k3s-jupyter-'$env':'$CI_COMMIT_SHORT_SHA'"}}'
+      done
+    - kubectl rollout status deployment/jupyterhub-hub -n jupyterhub
+  environment:
+    name: staging
+  only:
+    - main
+
+deploy-production:
+  stage: deploy
+  tags:
+    - arm64
+    - kubectl
+  needs: ["deploy-staging"]
+  script:
+    - |
+      for env in security datascience malware pentesting; do
+        docker tag $REGISTRY/k3s-jupyter-$env:$CI_COMMIT_SHORT_SHA $REGISTRY/k3s-jupyter-$env:stable
+        docker push $REGISTRY/k3s-jupyter-$env:stable
+      done
+    - helm upgrade jupyterhub jupyterhub/jupyterhub
+        --namespace jupyterhub
+        --values kubernetes/jupyterhub/custom-values.yaml
+        --set singleuser.image.tag=stable
+        --wait
+  environment:
+    name: production
+  when: manual
+  only:
+    - main

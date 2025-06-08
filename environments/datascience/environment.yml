@@ -1,0 +1,90 @@
+name: jupyter-datascience
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Python base
+  - python=3.11
+  - pip
+  - ipykernel
+  - ipywidgets
+  
+  # Core Data Science
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - statsmodels
+  
+  # Deep Learning (ARM64 optimized)
+  - pytorch::pytorch  # ARM64 builds available
+  - torchvision
+  - torchaudio
+  
+  # Visualization
+  - matplotlib
+  - seaborn
+  - plotly
+  - bokeh
+  - altair
+  - holoviews
+  
+  # Data Engineering
+  - dask
+  - numba
+  - polars
+  - pyarrow
+  - fastparquet
+  
+  # Machine Learning
+  - xgboost
+  - lightgbm
+  - catboost
+  - mlflow
+  
+  # Natural Language Processing
+  - nltk
+  - spacy
+  - gensim
+  
+  # Computer Vision
+  - opencv
+  - pillow
+  - scikit-image
+  
+  # Database
+  - sqlalchemy
+  - psycopg2
+  - pymongo
+  - redis-py
+  
+  # Utilities
+  - jupyter-dash
+  - jupyterlab-git
+  - nb_conda_kernels
+  - tqdm
+  - rich
+  
+  # Pip packages
+  - pip:
+    # TensorFlow for ARM64
+    - tensorflow-aarch64
+    
+    # Additional ML libraries
+    - optuna
+    - shap
+    - lime
+    - eli5
+    
+    # Time series
+    - prophet
+    - statsforecast
+    - tslearn
+    
+    # AutoML
+    - auto-sklearn
+    - pycaret
+    
+    # Experiment tracking
+    - wandb
+    - neptune-client

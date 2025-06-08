@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb_checkpoints
+.jupyter/
+.local/
+
+# Docker
+.dockerignore
+*.tar
+*.tar.gz
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Security
+*.key
+*.pem
+*.cert
+secrets/
+.env
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Data files (too large)
+*.csv
+*.parquet
+*.h5
+*.hdf5
+data/
+
+# Model files
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+models/
+
+# Documentation build
+docs/_build/
+site/
+
+# Kubernetes
+*.kubeconfig
+kubeconfig

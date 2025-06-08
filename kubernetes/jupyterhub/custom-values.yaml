@@ -1,0 +1,166 @@
+# JupyterHub Custom Values for K3s ARM64 Cluster
+hub:
+  image:
+    name: quay.io/jupyterhub/k8s-hub
+    tag: "3.0.0"
+  
+  # Use admin credentials from secret
+  config:
+    Authenticator:
+      admin_users:
+        - admin
+    DummyAuthenticator:
+      password: picluster123
+    JupyterHub:
+      admin_access: true
+      authenticate_prometheus: false
+  
+  # Node affinity for cn1
+  nodeSelector:
+    kubernetes.io/hostname: cn1
+  
+  # Resources
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+proxy:
+  secretToken: "$(openssl rand -hex 32)"
+  service:
+    type: LoadBalancer
+    loadBalancerIP: 10.5.3.4
+  
+  nodeSelector:
+    kubernetes.io/hostname: cn1
+
+singleuser:
+  # Default single-user image
+  image:
+    name: k3s-jupyter-datascience
+    tag: latest
+    pullPolicy: Always
+  
+  # Profile list for different environments
+  profileList:
+    - display_name: "Data Science Environment"
+      description: "ML/AI tools with PyTorch, TensorFlow, scikit-learn"
+      default: true
+      kubespawner_override:
+        image: k3s-jupyter-datascience:latest
+        cpu_limit: 4
+        cpu_guarantee: 1
+        mem_limit: 4G
+        mem_guarantee: 2G
+    
+    - display_name: "Security Analysis Environment"
+      description: "Network analysis, forensics, and security tools"
+      kubespawner_override:
+        image: k3s-jupyter-security:latest
+        cpu_limit: 2
+        cpu_guarantee: 0.5
+        mem_limit: 3G
+        mem_guarantee: 1G
+        extra_container_config:
+          securityContext:
+            capabilities:
+              add: ["NET_RAW", "NET_ADMIN"]
+    
+    - display_name: "Malware Analysis Environment"
+      description: "Isolated environment for malware research"
+      kubespawner_override:
+        image: k3s-jupyter-malware:latest
+        cpu_limit: 2
+        cpu_guarantee: 0.5
+        mem_limit: 2G
+        mem_guarantee: 1G
+        extra_container_config:
+          securityContext:
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+    
+    - display_name: "Penetration Testing Environment"
+      description: "Web app and network penetration testing tools"
+      kubespawner_override:
+        image: k3s-jupyter-pentesting:latest
+        cpu_limit: 3
+        cpu_guarantee: 1
+        mem_limit: 3G
+        mem_guarantee: 1.5G
+        extra_container_config:
+          securityContext:
+            capabilities:
+              add: ["NET_RAW", "NET_ADMIN", "SYS_PTRACE"]
+  
+  # Storage
+  storage:
+    type: dynamic
+    capacity: 10Gi
+    dynamic:
+      storageClass: local-path
+      pvcNameTemplate: "jupyter-{username}-{servername}"
+      volumeNameTemplate: "jupyter-{username}-{servername}"
+    
+    # Extra volume mounts for NFS
+    extraVolumes:
+      - name: jupyter-shared
+        nfs:
+          server: 10.5.1.81
+          path: /srv/nfs/k8s-data/jupyter-shared
+      - name: jupyter-datasets
+        nfs:
+          server: 10.5.1.81
+          path: /srv/nfs/k8s-data/jupyter-datasets
+    
+    extraVolumeMounts:
+      - name: jupyter-shared
+        mountPath: /home/jovyan/shared
+        readOnly: false
+      - name: jupyter-datasets
+        mountPath: /home/jovyan/datasets
+        readOnly: true
+  
+  # Resource defaults
+  cpu:
+    limit: 4
+    guarantee: 0.5
+  memory:
+    limit: 4G
+    guarantee: 1G
+  
+  # Node placement
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+  
+  # Extra pod configuration
+  extraEnv:
+    JUPYTER_ENABLE_LAB: "true"
+    GRANT_SUDO: "yes"
+  
+  # Command to start container
+  cmd: start-singleuser.sh
+
+prePuller:
+  # Disable prepuller for ARM64 custom images
+  continuous:
+    enabled: false
+  hook:
+    enabled: false
+
+scheduling:
+  userScheduler:
+    enabled: true
+    nodeSelector:
+      kubernetes.io/hostname: cn1
+
+cull:
+  enabled: true
+  timeout: 3600
+  every: 300
+  maxAge: 86400
+
+debug:
+  enabled: false

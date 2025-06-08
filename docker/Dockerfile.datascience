@@ -1,0 +1,71 @@
+# Data Science Environment for ARM64
+FROM k3s-jupyter-base:latest
+
+USER root
+
+# Install data science system packages
+RUN apt-get update && apt-get install -y \
+    # Compilation dependencies
+    gfortran \
+    libopenblas-dev \
+    liblapack-dev \
+    libhdf5-dev \
+    # Image processing
+    libopencv-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libtiff-dev \
+    # Database clients
+    postgresql-client \
+    mongodb-clients \
+    redis-tools \
+    # Additional tools
+    graphviz \
+    ffmpeg \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Switch to jupyter user
+USER jupyter
+WORKDIR /home/jupyter
+
+# Copy environment files
+COPY environments/datascience/environment.yml /tmp/environment.yml
+COPY environments/datascience/pyproject.toml /tmp/pyproject.toml
+
+# Create conda environment
+RUN conda env create -f /tmp/environment.yml && \
+    conda clean --all -f -y && \
+    rm /tmp/environment.yml
+
+# Activate environment and install kernel
+RUN /opt/conda/envs/jupyter-datascience/bin/python -m ipykernel install \
+    --user \
+    --name datascience \
+    --display-name "Data Science (ARM64)"
+
+# Install JupyterLab extensions
+RUN /opt/conda/envs/jupyter-datascience/bin/jupyter labextension install \
+    @jupyter-widgets/jupyterlab-manager \
+    jupyterlab-plotly \
+    @jupyterlab/git
+
+# Create notebook directories
+RUN mkdir -p notebooks/datascience/{data,models,experiments,visualizations,reports}
+
+# Copy example notebooks if available
+COPY environments/datascience/notebooks/* notebooks/datascience/ || true
+
+# Download sample datasets
+RUN cd notebooks/datascience/data && \
+    wget -q https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv || true && \
+    wget -q https://raw.githubusercontent.com/mwaskom/seaborn-data/master/titanic.csv || true
+
+# Set environment variables
+ENV CONDA_DEFAULT_ENV=jupyter-datascience
+ENV PATH=/opt/conda/envs/jupyter-datascience/bin:$PATH
+ENV MPLBACKEND=Agg
+
+WORKDIR /home/jupyter/notebooks
+
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--no-browser", "--allow-root"]

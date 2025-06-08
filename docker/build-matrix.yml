@@ -1,0 +1,115 @@
+# Docker Build Matrix Configuration
+# Defines build parameters for all Jupyter environments
+
+environments:
+  base:
+    dockerfile: Dockerfile.base
+    context: .
+    platforms:
+      - linux/arm64
+    tags:
+      - latest
+      - "1.0.0"
+    args:
+      PYTHON_VERSION: "3.11"
+      MINIFORGE_VERSION: "latest"
+    
+  security:
+    dockerfile: Dockerfile.security
+    context: .
+    platforms:
+      - linux/arm64
+    base_image: k3s-jupyter-base
+    tags:
+      - latest
+      - "1.0.0"
+    build_args:
+      INSTALL_FORENSICS: "true"
+      INSTALL_NETWORK: "true"
+    test_commands:
+      - "python -c 'import scapy'"
+      - "python -c 'import yara'"
+      - "jupyter kernelspec list | grep security"
+    
+  datascience:
+    dockerfile: Dockerfile.datascience
+    context: .
+    platforms:
+      - linux/arm64
+    base_image: k3s-jupyter-base
+    tags:
+      - latest
+      - "1.0.0"
+    build_args:
+      INSTALL_PYTORCH: "true"
+      INSTALL_TENSORFLOW: "true"
+    test_commands:
+      - "python -c 'import torch; print(torch.__version__)'"
+      - "python -c 'import pandas; print(pandas.__version__)'"
+      - "jupyter kernelspec list | grep datascience"
+    
+  malware:
+    dockerfile: Dockerfile.malware
+    context: .
+    platforms:
+      - linux/arm64
+    base_image: k3s-jupyter-base
+    tags:
+      - latest
+      - "1.0.0"
+    build_args:
+      INSTALL_RE_TOOLS: "true"
+      SANDBOX_MODE: "isolated"
+    test_commands:
+      - "python -c 'import pefile'"
+      - "python -c 'import capstone'"
+      - "jupyter kernelspec list | grep malware"
+    
+  pentesting:
+    dockerfile: Dockerfile.pentesting
+    context: .
+    platforms:
+      - linux/arm64
+    base_image: k3s-jupyter-base
+    tags:
+      - latest
+      - "1.0.0"
+    build_args:
+      INSTALL_WEB_TOOLS: "true"
+      INSTALL_EXPLOIT_TOOLS: "true"
+    test_commands:
+      - "python -c 'import impacket'"
+      - "python -c 'import pwntools'"
+      - "jupyter kernelspec list | grep pentesting"
+
+# Build configuration
+build_config:
+  registry: "localhost:5000"
+  namespace: "jupyterhub"
+  
+  # Resource limits for builds
+  resources:
+    cpu: "2"
+    memory: "4G"
+    
+  # Cache configuration
+  cache:
+    type: "registry"
+    mode: "max"
+    
+  # Security scanning
+  security:
+    scan_images: true
+    vulnerability_threshold: "high"
+    
+# Deployment configuration
+deployment:
+  environments:
+    staging:
+      auto_deploy: true
+      namespace: "jupyterhub-staging"
+      
+    production:
+      auto_deploy: false
+      namespace: "jupyterhub"
+      approval_required: true
