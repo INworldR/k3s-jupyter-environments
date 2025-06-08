@@ -29,7 +29,7 @@ hub:
       memory: 1Gi
 
 proxy:
-  secretToken: "$(openssl rand -hex 32)"
+  secretToken: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
   service:
     type: LoadBalancer
     loadBalancerIP: 10.5.3.4
@@ -40,60 +40,38 @@ proxy:
 singleuser:
   # Default single-user image
   image:
-    name: k3s-jupyter-datascience
-    tag: latest
+    name: quay.io/jupyterhub/singleuser
+    tag: "4.0.0"
     pullPolicy: Always
   
   # Profile list for different environments
   profileList:
-    - display_name: "Data Science Environment"
-      description: "ML/AI tools with PyTorch, TensorFlow, scikit-learn"
+    - display_name: "Default Environment"
+      description: "Standard JupyterLab with Python 3.11"
       default: true
       kubespawner_override:
-        image: k3s-jupyter-datascience:latest
+        cpu_limit: 2
+        cpu_guarantee: 0.5
+        mem_limit: 2G
+        mem_guarantee: 1G
+    
+    - display_name: "Data Science Environment (Coming Soon)"
+      description: "ML/AI tools with PyTorch, TensorFlow, scikit-learn"
+      kubespawner_override:
+        image: quay.io/jupyterhub/singleuser:4.0.0
         cpu_limit: 4
         cpu_guarantee: 1
         mem_limit: 4G
         mem_guarantee: 2G
     
-    - display_name: "Security Analysis Environment"
+    - display_name: "Security Analysis Environment (Coming Soon)"
       description: "Network analysis, forensics, and security tools"
       kubespawner_override:
-        image: k3s-jupyter-security:latest
+        image: quay.io/jupyterhub/singleuser:4.0.0
         cpu_limit: 2
         cpu_guarantee: 0.5
         mem_limit: 3G
         mem_guarantee: 1G
-        extra_container_config:
-          securityContext:
-            capabilities:
-              add: ["NET_RAW", "NET_ADMIN"]
-    
-    - display_name: "Malware Analysis Environment"
-      description: "Isolated environment for malware research"
-      kubespawner_override:
-        image: k3s-jupyter-malware:latest
-        cpu_limit: 2
-        cpu_guarantee: 0.5
-        mem_limit: 2G
-        mem_guarantee: 1G
-        extra_container_config:
-          securityContext:
-            readOnlyRootFilesystem: false
-            allowPrivilegeEscalation: false
-    
-    - display_name: "Penetration Testing Environment"
-      description: "Web app and network penetration testing tools"
-      kubespawner_override:
-        image: k3s-jupyter-pentesting:latest
-        cpu_limit: 3
-        cpu_guarantee: 1
-        mem_limit: 3G
-        mem_guarantee: 1.5G
-        extra_container_config:
-          securityContext:
-            capabilities:
-              add: ["NET_RAW", "NET_ADMIN", "SYS_PTRACE"]
   
   # Storage
   storage:
