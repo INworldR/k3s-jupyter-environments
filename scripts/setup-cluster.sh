@@ -16,12 +16,18 @@ echo "Installing required tools..."
 sudo apt-get update
 sudo apt-get install -y \
   docker.io \
-  docker-buildx \
   git \
   curl \
   jq
 
 # Setup Docker buildx for multi-arch
+if ! docker buildx version &> /dev/null; then
+  echo "Installing docker buildx plugin..."
+  mkdir -p ~/.docker/cli-plugins/
+  curl -L "https://github.com/docker/buildx/releases/download/v0.11.2/buildx-v0.11.2.linux-arm64" -o ~/.docker/cli-plugins/docker-buildx
+  chmod +x ~/.docker/cli-plugins/docker-buildx
+fi
+
 docker buildx create --name k3s-builder --use || true
 docker buildx inspect --bootstrap
 
